@@ -17,6 +17,8 @@
 
 #include <linux/module.h>
 #include <linux/delay.h>
+/* #include <asm/vpe.h> needed for if (!setup_max_cpus)... only*/
+#include <asm/vpe.h>
 #include <video/mipi_display.h>
 #include <lantiq_soc.h>
 
@@ -97,14 +99,19 @@ static unsigned short ili9341_GetControllerID_smp(struct fbtft_par *par)
 	unsigned short	iParameter1;
 	unsigned short	iParameter2;
 
+	if (!setup_max_cpus) { /* nosmp is set */
+			lcd_WriteCommand(par, 0xD3);
+			iParameter1 = lcd_ReadData(par);
+			iParameter2 = lcd_ReadData(par);
+	} else {
 	spin_lock_irqsave(&ebu_lock, lockflags);
 
 	lcd_WriteCommand(par, 0xD3);
-
 	iParameter1 = lcd_ReadData(par);
 	iParameter2 = lcd_ReadData(par);
 
 	spin_unlock_irqrestore(&ebu_lock, lockflags);
+	}
 
 	return iParameter2;
 }
@@ -305,52 +312,99 @@ static int init_display_smp(struct fbtft_par *par)
 	if (!ili9341_Probe_smp(par))
 		return -ENODEV;
 
-	spin_lock_irqsave(&ebu_lock, lockflags);
+	if (!setup_max_cpus) { /* nosmp is set */
+		printk("fb_ili9341_eb904 %s: setup_max_cpus = %i (nosmp)\n", __FUNCTION__, setup_max_cpus);
+		/* startup sequence for MI0283QT-9A */
+		write_reg(par, MIPI_DCS_SOFT_RESET);
+		mdelay(5);
+		write_reg(par, MIPI_DCS_SET_DISPLAY_OFF);
+		/* --------------------------------------------------------- */
+		write_reg(par, 0xCF, 0x00, 0x83, 0x30);
+		write_reg(par, 0xED, 0x64, 0x03, 0x12, 0x81);
+		write_reg(par, 0xE8, 0x85, 0x01, 0x79);
+		write_reg(par, 0xCB, 0x39, 0X2C, 0x00, 0x34, 0x02);
+		write_reg(par, 0xF7, 0x20);
+		write_reg(par, 0xEA, 0x00, 0x00);
+		/* ------------power control-------------------------------- */
+		// write_reg(par, 0xC0, 0x26);
+		// write_reg(par, 0xC1, 0x11);
+		write_reg(par, 0xC0, 0x21); //VRH[5:0]
+		write_reg(par, 0xC1, 0x12); //SAP[2:0];BT[3:0]
+		
+		/* ------------VCOM --------- */
+		// write_reg(par, 0xC5, 0x35, 0x3E);
+		// write_reg(par, 0xC7, 0xBE);
+		write_reg(par, 0xC5, 0x24, 0x3F); //VCM control
+		write_reg(par, 0xC7, 0xC2);       //VCM control2
+		/* ------------memory access control------------------------ */
+		write_reg(par, MIPI_DCS_SET_PIXEL_FORMAT, 0x55); /* 16bit pixel */
+		/* ------------frame rate----------------------------------- */
+		// write_reg(par, 0xB1, 0x00, 0x1B);
+		write_reg(par, 0xB1, 0x00, 0x16); // uboot
+		/* ------------Gamma---------------------------------------- */
+		/* write_reg(par, 0xF2, 0x08); */ /* Gamma Function Disable */
+		write_reg(par, MIPI_DCS_SET_GAMMA_CURVE, 0x01);
+		/* ------------display-------------------------------------- */
+		write_reg(par, 0xB7, 0x07); /* entry mode set */
+		/* ------------additional values---------------------------- */
+		write_reg(par, 0x13);       /* normal display mode on */
+		write_reg(par, 0x38);       /* idle mode off */
+		write_reg(par, 0x20);       /* inversion mode off */
+		/* --------------------------------------------------------- */
+		write_reg(par, 0xB6, 0x0A, 0x82, 0x27, 0x00);
+		write_reg(par, MIPI_DCS_EXIT_SLEEP_MODE);
+		mdelay(100);
+		write_reg(par, MIPI_DCS_SET_DISPLAY_ON);
+		mdelay(20);
+	} else {
+		printk("fb_ili9341_eb904 %s: setup_max_cpus = %i (with SMP)\n", __FUNCTION__, setup_max_cpus);
+		spin_lock_irqsave(&ebu_lock, lockflags);
 
-	/* startup sequence for MI0283QT-9A */
-	write_reg_nolock(par, MIPI_DCS_SOFT_RESET);
-	mdelay(5);
-	write_reg_nolock(par, MIPI_DCS_SET_DISPLAY_OFF);
-	/* --------------------------------------------------------- */
-	write_reg_nolock(par, 0xCF, 0x00, 0x83, 0x30);
-	write_reg_nolock(par, 0xED, 0x64, 0x03, 0x12, 0x81);
-	write_reg_nolock(par, 0xE8, 0x85, 0x01, 0x79);
-	write_reg_nolock(par, 0xCB, 0x39, 0X2C, 0x00, 0x34, 0x02);
-	write_reg_nolock(par, 0xF7, 0x20);
-	write_reg_nolock(par, 0xEA, 0x00, 0x00);
-	/* ------------power control-------------------------------- */
+		/* startup sequence for MI0283QT-9A */
+		write_reg_nolock(par, MIPI_DCS_SOFT_RESET);
+		mdelay(5);
+		write_reg_nolock(par, MIPI_DCS_SET_DISPLAY_OFF);
+		/* --------------------------------------------------------- */
+		write_reg_nolock(par, 0xCF, 0x00, 0x83, 0x30);
+		write_reg_nolock(par, 0xED, 0x64, 0x03, 0x12, 0x81);
+		write_reg_nolock(par, 0xE8, 0x85, 0x01, 0x79);
+		write_reg_nolock(par, 0xCB, 0x39, 0X2C, 0x00, 0x34, 0x02);
+		write_reg_nolock(par, 0xF7, 0x20);
+		write_reg_nolock(par, 0xEA, 0x00, 0x00);
+		/* ------------power control-------------------------------- */
 //	write_reg_nolock(par, 0xC0, 0x26);
 //	write_reg_nolock(par, 0xC1, 0x11);
-	write_reg_nolock(par, 0xC0, 0x21);			// VRH[5:0]
-	write_reg_nolock(par, 0xC1, 0x12);			// SAP[2:0];BT[3:0]
+		write_reg_nolock(par, 0xC0, 0x21);			// VRH[5:0]
+		write_reg_nolock(par, 0xC1, 0x12);			// SAP[2:0];BT[3:0]
 
 	/* ------------VCOM --------- */
 //	write_reg_nolock(par, 0xC5, 0x35, 0x3E);
 //	write_reg_nolock(par, 0xC7, 0xBE);
-	write_reg_nolock(par, 0xC5, 0x24, 0x3F);		// VCM control
-	write_reg_nolock(par, 0xC7, 0xC2);			// VCM control2
-	/* ------------memory access control------------------------ */
-	write_reg_nolock(par, MIPI_DCS_SET_PIXEL_FORMAT, 0x55);	// 16bit pixel
-	/* ------------frame rate----------------------------------- */
-	// write_reg_nolock(par, 0xB1, 0x00, 0x1B);
-	write_reg_nolock(par, 0xB1, 0x00, 0x16);		// uboot
-	/* ------------Gamma---------------------------------------- */
-	/* write_reg_nolock(par, 0xF2, 0x08); */ /* Gamma Function Disable */
-	write_reg_nolock(par, MIPI_DCS_SET_GAMMA_CURVE, 0x01);
-	/* ------------display-------------------------------------- */
-	write_reg_nolock(par, 0xB7, 0x07);			// entry mode set
-	/* ------------additional values---------------------------- */
-	write_reg_nolock(par, 0x13);				// normal display mode on
-	write_reg_nolock(par, 0x38);				// idle mode off
-	write_reg_nolock(par, 0x20);				// inversion mode off
-	/* --------------------------------------------------------- */
-	write_reg_nolock(par, 0xB6, 0x0A, 0x82, 0x27, 0x00);
-	write_reg_nolock(par, MIPI_DCS_EXIT_SLEEP_MODE);
-	mdelay(100);
-	write_reg_nolock(par, MIPI_DCS_SET_DISPLAY_ON);
-	mdelay(20);
+		write_reg_nolock(par, 0xC5, 0x24, 0x3F);		// VCM control
+		write_reg_nolock(par, 0xC7, 0xC2);			// VCM control2
+		/* ------------memory access control------------------------ */
+		write_reg_nolock(par, MIPI_DCS_SET_PIXEL_FORMAT, 0x55);	// 16bit pixel
+		/* ------------frame rate----------------------------------- */
+		// write_reg_nolock(par, 0xB1, 0x00, 0x1B);
+		write_reg_nolock(par, 0xB1, 0x00, 0x16);		// uboot
+		/* ------------Gamma---------------------------------------- */
+		/* write_reg_nolock(par, 0xF2, 0x08); */ /* Gamma Function Disable */
+		write_reg_nolock(par, MIPI_DCS_SET_GAMMA_CURVE, 0x01);
+		/* ------------display-------------------------------------- */
+		write_reg_nolock(par, 0xB7, 0x07);			// entry mode set
+		/* ------------additional values---------------------------- */
+		write_reg_nolock(par, 0x13);				// normal display mode on
+		write_reg_nolock(par, 0x38);				// idle mode off
+		write_reg_nolock(par, 0x20);				// inversion mode off
+		/* --------------------------------------------------------- */
+		write_reg_nolock(par, 0xB6, 0x0A, 0x82, 0x27, 0x00);
+		write_reg_nolock(par, MIPI_DCS_EXIT_SLEEP_MODE);
+		mdelay(100);
+		write_reg_nolock(par, MIPI_DCS_SET_DISPLAY_ON);
+		mdelay(20);
 
-	spin_unlock_irqrestore(&ebu_lock, lockflags);
+		spin_unlock_irqrestore(&ebu_lock, lockflags);
+	}
 
 	return 0;
 }
@@ -359,7 +413,8 @@ static void set_addr_win_smp(struct fbtft_par *par, int xs, int ys, int xe, int 
 {
 	unsigned long lockflags;
 
-	spin_lock_irqsave(&ebu_lock, lockflags);
+	if (setup_max_cpus)
+		spin_lock_irqsave(&ebu_lock, lockflags);
 
 	write_reg_nolock(par, MIPI_DCS_SET_COLUMN_ADDRESS,
 		(xs >> 8) & 0xFF, xs & 0xFF, (xe >> 8) & 0xFF, xe & 0xFF);
@@ -369,7 +424,8 @@ static void set_addr_win_smp(struct fbtft_par *par, int xs, int ys, int xe, int 
 
 	write_reg_nolock(par, MIPI_DCS_WRITE_MEMORY_START);
 
-	spin_unlock_irqrestore(&ebu_lock, lockflags);
+	if (setup_max_cpus)
+		spin_unlock_irqrestore(&ebu_lock, lockflags);
 }
 
 
@@ -382,8 +438,27 @@ static void set_addr_win_smp(struct fbtft_par *par, int xs, int ys, int xe, int 
 
 static int set_var_smp(struct fbtft_par *par)
 {
+	if (!setup_max_cpus) {
+	switch (par->info->var.rotate) {
+	case 0:
+		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
+			  MEM_X | (par->bgr << MEM_BGR));
+		break;
+	case 270:
+		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
+			  MEM_V | MEM_L | (par->bgr << MEM_BGR));
+		break;
+	case 180:
+		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
+			  MEM_Y | (par->bgr << MEM_BGR));
+		break;
+	case 90:
+		write_reg(par, MIPI_DCS_SET_ADDRESS_MODE,
+			  MEM_Y | MEM_X | MEM_V | (par->bgr << MEM_BGR));
+		break;
+	}
+	} else {
 	u8  mem;
-
 	switch (par->info->var.rotate) {
 	case 0:
 		mem = MEM_X;
@@ -400,8 +475,8 @@ static int set_var_smp(struct fbtft_par *par)
 	default:
 		return 0;
 	}
-
 	write_reg_lock(par, MIPI_DCS_SET_ADDRESS_MODE, mem | (par->bgr << MEM_BGR));
+	}
 	return 0;
 }
 
@@ -417,18 +492,28 @@ static int set_gamma_smp(struct fbtft_par *par, u32 *curves)
 	unsigned long lockflags;
 	int i;
 
-	spin_lock_irqsave(&ebu_lock, lockflags);
+	if (!setup_max_cpus) {
+		for (i = 0; i < par->gamma.num_curves; i++)
+			write_reg(par, 0xE0 + i,
+				CURVE(i, 0), CURVE(i, 1), CURVE(i, 2),
+				CURVE(i, 3), CURVE(i, 4), CURVE(i, 5),
+				CURVE(i, 6), CURVE(i, 7), CURVE(i, 8),
+				CURVE(i, 9), CURVE(i, 10), CURVE(i, 11),
+				CURVE(i, 12), CURVE(i, 13), CURVE(i, 14));
+	} else {
+		spin_lock_irqsave(&ebu_lock, lockflags);
+	
+		for (i = 0; i < par->gamma.num_curves; i++)
+			write_reg_nolock(par, 0xE0 + i,
+				CURVE(i, 0), CURVE(i, 1), CURVE(i, 2),
+				CURVE(i, 3), CURVE(i, 4), CURVE(i, 5),
+				CURVE(i, 6), CURVE(i, 7), CURVE(i, 8),
+				CURVE(i, 9), CURVE(i, 10), CURVE(i, 11),
+				CURVE(i, 12), CURVE(i, 13), CURVE(i, 14));
 
-	for (i = 0; i < par->gamma.num_curves; i++)
-		write_reg_nolock(par, 0xE0 + i,
-			CURVE(i, 0), CURVE(i, 1), CURVE(i, 2),
-			CURVE(i, 3), CURVE(i, 4), CURVE(i, 5),
-			CURVE(i, 6), CURVE(i, 7), CURVE(i, 8),
-			CURVE(i, 9), CURVE(i, 10), CURVE(i, 11),
-			CURVE(i, 12), CURVE(i, 13), CURVE(i, 14));
-
-	spin_unlock_irqrestore(&ebu_lock, lockflags);
-
+		spin_unlock_irqrestore(&ebu_lock, lockflags);
+	}
+	
 	return 0;
 }
 
@@ -436,9 +521,11 @@ static int fbtft_write_8_wr_ebu_smp(struct fbtft_par *par, void *buf, size_t len
 {
 	unsigned long lockflags;
 
-	spin_lock_irqsave(&ebu_lock, lockflags);
+	if (setup_max_cpus)
+		spin_lock_irqsave(&ebu_lock, lockflags);
 	lcd_WriteData(par, buf, len);
-	spin_unlock_irqrestore(&ebu_lock, lockflags);
+	if (setup_max_cpus)
+		spin_unlock_irqrestore(&ebu_lock, lockflags);
 
 	return 0;
 }
@@ -484,13 +571,15 @@ static void fbtft_write_reg8_bus8_ebu_smp(struct fbtft_par *par, int len, ...)
 	unsigned long lockflags;
 	va_list args;
 
-	spin_lock_irqsave(&ebu_lock, lockflags);
+	if (setup_max_cpus)
+		spin_lock_irqsave(&ebu_lock, lockflags);
 
 	va_start(args, len);
 	fbtft_write_reg8_bus8_ebu_v(par, len, args);
 	va_end(args);
 
-	spin_unlock_irqrestore(&ebu_lock, lockflags);
+	if (setup_max_cpus)
+		spin_unlock_irqrestore(&ebu_lock, lockflags);
 }
 
 static struct fbtft_display display = {
