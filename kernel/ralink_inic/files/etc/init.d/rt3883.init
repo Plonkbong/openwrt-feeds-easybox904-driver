@@ -36,11 +36,13 @@ ralink_get_addr() {
 }
 
 load_module() {
-	busybox devmem 0x1e10b200 32 0x4024 # MII_CFG_5 (mii_base + portnum*8) = MII_CFG_EN | MII_CFG_RATE_M125 | MII_CFG_MODE_RGMII
-	busybox devmem 0x1e10b204 32 0xc003 # PCDU_5
-	busybox devmem 0x1e10a40c 32 0x0180 # MAC_CTRL_0 todo :switch settings
-	busybox devmem 0x1e10b140 32 0x3205 # PHY_ADDR_5 mdio_base + (0x54 -(portnum*4)) = MDIO_PHY_LINK_UP | MDIO_PHY_SPEED_G1 | MDIO_PHY_FDUP_EN | phyaddr
-	sleep 10
+### Not needed since PCDU setting is included in driver ###
+### only for reference                                  ###
+#	busybox devmem 0x1e10b200 32 0x4024 # MII_CFG_5 (mii_base + portnum*8) = MII_CFG_EN | MII_CFG_RATE_M125 | MII_CFG_MODE_RGMII
+#	busybox devmem 0x1e10b204 32 0xc003 # PCDU_5
+#	busybox devmem 0x1e10a40c 32 0x0180 # MAC_CTRL_0 todo :switch settings
+#	busybox devmem 0x1e10b140 32 0x3205 # PHY_ADDR_5 mdio_base + (0x54 -(portnum*4)) = MDIO_PHY_LINK_UP | MDIO_PHY_SPEED_G1 | MDIO_PHY_FDUP_EN | phyaddr
+#	sleep 10
 
 	MAC1="$(ralink_get_addr eth0.1 6)"
 	MAC2="$(ralink_get_addr eth0.1 8)"
