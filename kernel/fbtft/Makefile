@@ -23,7 +23,7 @@ define KernelPackage/fb-tft-ili9341-eb904
   SUBMENU:=$(VIDEO_MENU)
   TITLE:=EasyBox 904 display support
   DEPENDS:=@TARGET_lantiq_xrx200_DEVICE_arcadyan_vgv952cjw33-e-ir-vpe||TARGET_lantiq_xrx200_DEVICE_arcadyan_vgv952cjw33-e-ir-smp||TARGET_lantiq_xrx200_DEVICE_lantiq_vgv952cjw33-e-ir||TARGET_lantiq_xrx200 \
-	+kmod-fb-tft
+	+kmod-fb-tft +kmod-fb-sys-fops +kmod-fb-sys-ram +kmod-backlight
   FILES:=\
 	$(PKG_BUILD_DIR)/fb_ili9341_eb904.ko
 # Not really needed, because the device is initialized via DTS
