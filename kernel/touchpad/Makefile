@@ -11,7 +11,7 @@ PKG_NAME:=keyboard-eb904
 PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 
-PKG_FLAGS:=nonshared
+#PKG_FLAGS:=nonshared
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -27,6 +27,7 @@ define KernelPackage/keyboard-eb904
 	CONFIG_INPUT_KEYBOARD=y
   FILES:=$(PKG_BUILD_DIR)/eb904_keypad.ko
   AUTOLOAD:=$(call AutoLoad,60,eb904_keypad)
+  PKGFLAGS:=shared
 endef
 
 define KernelPackage/keyboard-eb904/description

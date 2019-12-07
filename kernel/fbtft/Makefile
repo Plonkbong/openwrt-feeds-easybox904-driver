@@ -11,7 +11,7 @@ PKG_NAME:=fb-tft-ili9341-eb904
 PKG_VERSION:=1.0.1
 PKG_RELEASE:=1
 
-PKG_FLAGS:=nonshared
+#PKG_FLAGS:=nonshared
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -29,6 +29,7 @@ define KernelPackage/fb-tft-ili9341-eb904
 # Not really needed, because the device is initialized via DTS
 #	$(LINUX_DIR)/drivers/staging/fbtft/fbtft_device.ko
   AUTOLOAD:=$(call AutoLoad,09,fb_ili9341_eb904)
+  PKGFLAGS:=shared
 endef
 
 define KernelPackage/fb-tft-ili9341-eb904/description
