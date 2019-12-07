@@ -9,7 +9,8 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=ralink_inic
-PKG_VERSION:=1.0.0
+PKG_SOURCE_VERSION:=1b963f4
+PKG_VERSION:=$(PKG_SOURCE_VERSION)
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
@@ -17,10 +18,10 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)_$(ARCH).tar.bz2
 #PKG_SOURCE_URL:=https://github.com/kovz/ralink_inic.git
 PKG_SOURCE_URL:=https://github.com/Quallenauge/ralink_inic.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=feature/lede_integration
-PKG_HASH:=6596ff34509f25b4b7604023ef6d4b8def204a05cdd140b93bbdc1b76acd56a9
+#PKG_SOURCE_VERSION:=feature/lede_integration
+#PKG_HASH:=6596ff34509f25b4b7604023ef6d4b8def204a05cdd140b93bbdc1b76acd56a9
 
-PKG_FLAGS:=nonshared
+#PKG_FLAGS:=nonshared
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -37,6 +38,7 @@ define KernelPackage/ralink_inic/Default
   DEPENDS:=+wireless-tools
   TITLE:=Kernel driver for ralink chipsets
   FILES:=$(PKG_BUILD_DIR)/rt3883_iNIC.ko
+  PKGFLAGS:=shared
 #AUTOLOAD:=$(call AutoLoad,30,rt3883_iNIC.ko)
 endef
 
