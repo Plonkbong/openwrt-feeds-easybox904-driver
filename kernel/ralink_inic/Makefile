@@ -62,7 +62,7 @@ endef
 MAKE_KMOD := $(MAKE) -C "$(LINUX_DIR)" \
 		$(KERNEL_MAKE_FLAGS) \
 		PATH="$(TARGET_PATH)" \
-		SUBDIRS="$(PKG_BUILD_DIR)/kmod" \
+		M="$(PKG_BUILD_DIR)/kmod" \
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
@@ -71,7 +71,7 @@ endef
 define Build/Compile
 	# Compile the kernel part
 	$(MAKE_KMOD) \
-		SUBDIRS="$(PKG_BUILD_DIR)" \
+		M="$(PKG_BUILD_DIR)" \
 		MODFLAGS="-DMODULE -mlong-calls" \
 		modules
 endef
