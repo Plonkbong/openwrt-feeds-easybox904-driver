@@ -9,7 +9,9 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=ralink_inic
-PKG_SOURCE_VERSION:=1b963f4
+# this is the working version on kernel 4.19.x
+#PKG_SOURCE_VERSION:=1b963f4
+PKG_SOURCE_VERSION:=de9a965
 PKG_VERSION:=$(PKG_SOURCE_VERSION)
 PKG_RELEASE:=1
 
