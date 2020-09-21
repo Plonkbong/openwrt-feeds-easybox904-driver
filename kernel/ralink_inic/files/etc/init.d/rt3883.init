@@ -77,5 +77,8 @@ boot() {
         load_module
 }
 
-start() { :; }
+start() {
+        load_module
+}
+
 stop() { :; }
